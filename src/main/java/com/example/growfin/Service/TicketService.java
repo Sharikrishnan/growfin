@@ -138,25 +138,33 @@ public class TicketService {
         return updatedTicket;
     }
 
-    public List<Ticket> assignTicket() {
+    public List<Ticket> assignTicket() throws Exception {
         List<Ticket> tickets = ticketRepository.findAllByStatusContainsAndAssignedtoIsNull("Open");
         for (Ticket ticket : tickets) {
             Agent agent = agentRepository.findTopByOrderByTaskCountAscLastmodifiedAsc();
             ticket.setAssignedto(agent);
             agent.setTaskCount(agent.getTaskCount() + 1);
             agentRepository.save(agent);
+            sendGridEmailer.SendMail(
+                    ticket.getCustomerMail(),
+                    ticket.getTitle(),
+                    "Ticket has been updated");
         }
         ticketRepository.saveAll(tickets);
         return tickets;
     }
 
-    public Ticket assignTickettoAgent(Long ticketId, Long AgentId) throws FileNotFoundException {
+    public Ticket assignTickettoAgent(Long ticketId, Long AgentId) throws Exception {
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(FileNotFoundException::new);
         Agent agent = agentRepository.findById(AgentId).orElseThrow(FileNotFoundException::new);
         ticket.setAssignedto(agent);
         agent.setTaskCount(agent.getTaskCount()+1);
         agentRepository.save(agent);
         ticketRepository.save(ticket);
+        sendGridEmailer.SendMail(
+                ticket.getCustomerMail(),
+                ticket.getTitle(),
+                "Ticket has been updated");
         return ticket;
     }
 

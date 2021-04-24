@@ -110,7 +110,7 @@ public class TicketController {
             value = "/assign/tickets",
             produces = "application/json",
             method = RequestMethod.POST)
-    public List<Ticket> assignTicket() {
+    public List<Ticket> assignTicket() throws Exception {
         return ticketService.assignTicket();
     }
 
@@ -120,7 +120,7 @@ public class TicketController {
             method = RequestMethod.POST)
     public Ticket assignTickettoAgent(
             @PathVariable(value = "ticketId") Long ticketId,
-            @PathVariable(value = "agentId") Long agentId) throws FileNotFoundException {
+            @PathVariable(value = "agentId") Long agentId) throws Exception {
         return ticketService.assignTickettoAgent(ticketId,agentId);
     }
 
