@@ -1,160 +1,135 @@
 package com.example.growfin.controller;
 
 
-import com.example.growfin.Mail.SendGridEmailer;
-import com.example.growfin.exeception.ResourceNotFoundException;
-import com.example.growfin.model.agent;
-import com.example.growfin.model.ticket;
+import com.example.growfin.Request.CommentRequest;
+import com.example.growfin.Service.SendGridEmailer;
+import com.example.growfin.Request.FilterTicketRequest;
+import com.example.growfin.Service.TicketService;
+import com.example.growfin.model.Agent;
+import com.example.growfin.model.Ticket;
 import com.example.growfin.repository.AgentRepository;
 import com.example.growfin.repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.util.*;
 
 
 @RestController
-@RequestMapping("/api")
 public class TicketController {
-    public HashMap<Long, Integer> ticketStatus = new HashMap<Long,Integer>();
-
     @Autowired
     TicketRepository ticketRepository;
     @Autowired
     AgentRepository agentRepository;
     @Autowired
     SendGridEmailer sendGridEmailer;
+    @Autowired
+    TicketService ticketService;
 
-    @GetMapping("/tickets")
-    public List<ticket> getAllComments() {
-        return ticketRepository.findAll();
-    }
-
-    @GetMapping("/test")
+    @RequestMapping(
+            value = "/status",
+            produces = "application/json",
+            method = RequestMethod.GET)
     public String getStatus() {
         return "status ok";
     }
 
-    @PostMapping("/ticket")
-    public ticket createTicket(@RequestBody ticket ticket) {
-        return ticketRepository.save(ticket);
+    @RequestMapping(
+            value = "/tickets",
+            produces = "application/json",
+            method = RequestMethod.GET
+    )
+    public List<Ticket> getAllTickets() {
+        return ticketService.findAllTickets();
     }
 
-    @GetMapping("/ticket/{id}")
-    public ticket findTicketById(@PathVariable(value="id") Long ticketId) {
-        return ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket","id",ticketId));
+    @RequestMapping(
+            value = "/ticket",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.POST)
+    public Ticket createTicket(@RequestBody Ticket ticket) {
+        return ticketService.createTicket(ticket);
     }
 
-    @GetMapping("/ticket/assignedagent/{id}")
-    public List<ticket> findTicketByagent(@PathVariable(value = "id") Integer agentId) {
-        List<ticket> tickets = ticketRepository.findAll();
-        List<ticket> filteredTickets= new ArrayList<ticket>();
-        for(ticket temporaryTicket: tickets) {
-             if (temporaryTicket.getAssignedto().equals(agentId)) {
-                filteredTickets.add(temporaryTicket);
-             }
-        }
-        return filteredTickets;
-    }
-    @GetMapping("/ticket/customer/{name}")
-    public List<ticket> findTicketByCustomer(@PathVariable(value = "name") String customer) {
-        List<ticket> tickets = ticketRepository.findAll();
-        List<ticket> filteredTickets= new ArrayList<ticket>();
-        for(ticket temporaryTicket: tickets) {
-            if (temporaryTicket.getCustomer().equals(customer)) {
-                filteredTickets.add(temporaryTicket);
-            }
-        }
-        return filteredTickets;
+    @RequestMapping(
+            value = "/agent",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.POST)
+    public Agent createTicket(@RequestBody Agent agent) {
+        return ticketService.createAgent(agent);
     }
 
-    @GetMapping("/ticket/status/{name}")
-    public List<ticket> findTicketByStatus(@PathVariable(value = "name") String status) {
-        List<ticket> tickets = ticketRepository.findAll();
-        List<ticket> filteredTickets= new ArrayList<ticket>();
-        for(ticket temporaryTicket: tickets) {
-            if (temporaryTicket.getStatus().equals(status)) {
-                filteredTickets.add(temporaryTicket);
-            }
-        }
-        return filteredTickets;
+    @RequestMapping(
+            value = "/filter/ticket",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.GET)
+    public List<Ticket> filterTicket(@RequestBody FilterTicketRequest filterTicketRequest) throws FileNotFoundException {
+        return ticketService.filterTicket(filterTicketRequest);
+    }
+    @RequestMapping(
+            value = "/ticket/{id}",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.GET)
+    public Ticket findTicketById(@PathVariable(value="id") Long ticketId) throws FileNotFoundException {
+        return ticketService.findTicket(ticketId);
     }
 
-    @PostMapping("/ticket/{id}")
-    public ticket createTicket(@PathVariable(value = "id") Long ticketId,@RequestBody ticket requestTicket) {
-        ticket tempticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket","id",ticketId));
-        if (requestTicket.getCreatedby() != null) {
-            tempticket.setCreatedby(requestTicket.getCreatedby());
-        }
-        if (requestTicket.getAssignedto() != null) {
-            tempticket.setAssignedto(requestTicket.getAssignedto());
-        }
-        if (requestTicket.getCustomer() != null) {
-            tempticket.setCustomer(requestTicket.getCustomer());
-        }
-        if (requestTicket.getDescription() != null) {
-            tempticket.setDescription(requestTicket.getDescription());
-        }
-        tempticket.setLastmodified(requestTicket.getLastmodified());
-        if (requestTicket.getPriority() != null) {
-            tempticket.setPriority(requestTicket.getPriority());
-        }
-        if (requestTicket.getTitle() != null) {
-            tempticket.setTitle(requestTicket.getTitle());
-        }
-        if (requestTicket.getType() != null) {
-            tempticket.setType(requestTicket.getType());
-        }
-        return ticketRepository.save(tempticket);
+    @RequestMapping(
+        value = "update/ticket/{id}",
+        produces = "application/json",
+        consumes = "application/json",
+        method = RequestMethod.POST)
+    public Ticket UpdateTicket(@PathVariable(value = "id") Long ticketId, @RequestBody Ticket requestTicket) throws FileNotFoundException, IllegalAccessException {
+        return ticketService.updateTicket(ticketId,requestTicket);
     }
 
-    @PostMapping("/ticket/{id}/status/{statusname}")
-    public ticket updateStatus(@PathVariable(value = "id") Long ticketId,@PathVariable(value="statusname") String Status) throws Exception {
-        ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket","id",ticketId));
-        ticket.setStatus(Status);
-        return ticketRepository.save(ticket);
+    @RequestMapping(
+            value = "/ticket/{id}/status/{statusname}",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.POST)
+    public Ticket updateStatus(@PathVariable(value = "id") Long ticketId, @PathVariable(value="statusname") String status) throws IllegalAccessException, FileNotFoundException {
+        return ticketService.updateTicketStatus(ticketId,status);
     }
 
-    @PostMapping("/ticket/{id}/Response")
-    public ticket addResponse(@PathVariable(value = "id") Long ticketId,@RequestBody ticket requestTicket) throws IOException {
-        ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket","id",ticketId));
-        String comments = ticket.getComments()+" "+requestTicket.getComments();
-        ticket.setComments(comments);
-        sendGridEmailer.SendMail(ticket.getCustomerMail(), ticket.getTitle());
-        ticket updatedTicket =  ticketRepository.save(ticket);
-
-        return updatedTicket;
+    @RequestMapping(
+            value = "/ticket/{id}/Response",
+            produces = "application/json",
+            method = RequestMethod.POST)
+    public Ticket addResponse(@PathVariable(value = "id") Long ticketId, @RequestBody CommentRequest message) throws Exception {
+        return ticketService.addResponse(ticketId,message.getResponse());
 
     }
 
-    @PostMapping("/ticket/{di}/agent/{agentid}")
-    public  ticket assignTicket(@PathVariable(value = "id") Long ticketId,@PathVariable(value = "agentid") Integer agentid) {
-        ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket","id",ticketId));
-        ticket.setAssignedto(agentid);
-        return ticketRepository.save(ticket);
+    @RequestMapping(
+            value = "/assign/tickets",
+            produces = "application/json",
+            method = RequestMethod.POST)
+    public List<Ticket> assignTicket() {
+        return ticketService.assignTicket();
     }
 
-    @PostMapping("ticket/delete/{id}")
-    public ResponseEntity<?> deleteTicket(@PathVariable(value = "id") Long ticketId) {
-        ticket ticket = ticketRepository.findById(ticketId).orElseThrow(() -> new ResourceNotFoundException("Ticket","id",ticketId));
-        ticketRepository.delete(ticket);
-        return ResponseEntity.ok().build();
+    @RequestMapping(
+            value = "/assign/ticket/{ticketId}/agent/{agentId}",
+            produces = "application/json",
+            method = RequestMethod.POST)
+    public Ticket assignTickettoAgent(
+            @PathVariable(value = "ticketId") Long ticketId,
+            @PathVariable(value = "agentId") Long agentId) throws FileNotFoundException {
+        return ticketService.assignTickettoAgent(ticketId,agentId);
     }
 
-    @PostMapping("ticket/Resolve")
-    public ResponseEntity<?> resolveTicket() throws Exception {
-        List<ticket> tickets = ticketRepository.findAll();
-        for(ticket temporaryTicket: tickets) {
-
-            if (temporaryTicket.getLastmodified().compareTo(new Date()) >= 30) {
-                temporaryTicket.setStatus("Closed");
-                ticketRepository.save(temporaryTicket);
-            }
-
-        }
-        return ResponseEntity.ok().build();
+    @RequestMapping(
+            value = "ticket/delete/{id}",
+            produces = "application/json",
+            consumes = "application/json",
+            method = RequestMethod.POST)
+    public Ticket deleteTicket(@PathVariable(value = "id") Long ticketId) throws FileNotFoundException {
+        return  ticketService.deleteTicket(ticketId);
     }
-
 }
