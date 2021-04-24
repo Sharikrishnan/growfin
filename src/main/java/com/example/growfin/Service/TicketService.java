@@ -166,7 +166,7 @@ public class TicketService {
         return ticket;
     }
 
-    @Scheduled(cron = "*/30 0 * * * *")
+    @Scheduled(cron = "0 0 1 * * *")
     public void ResolveTicket() throws IllegalAccessException, FileNotFoundException {
         Calendar cal = Calendar.getInstance();
         Date today = cal.getTime();
