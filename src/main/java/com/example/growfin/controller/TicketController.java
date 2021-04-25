@@ -1,8 +1,8 @@
 package com.example.growfin.controller;
 
 
-import com.example.growfin.Request.CommentRequest;
-import com.example.growfin.Service.SendGridEmailer;
+import com.example.growfin.Request.CustomerResponseRequest;
+import com.example.growfin.Service.SendGridEmailerService;
 import com.example.growfin.Request.FilterTicketRequest;
 import com.example.growfin.Service.TicketService;
 import com.example.growfin.model.Agent;
@@ -23,7 +23,7 @@ public class TicketController {
     @Autowired
     AgentRepository agentRepository;
     @Autowired
-    SendGridEmailer sendGridEmailer;
+    SendGridEmailerService sendGridEmailerService;
     @Autowired
     TicketService ticketService;
 
@@ -58,7 +58,7 @@ public class TicketController {
             produces = "application/json",
             consumes = "application/json",
             method = RequestMethod.POST)
-    public Agent createTicket(@RequestBody Agent agent) {
+    public Agent createAgent(@RequestBody Agent agent) {
         return ticketService.createAgent(agent);
     }
 
@@ -83,7 +83,7 @@ public class TicketController {
         value = "update/ticket/{id}",
         produces = "application/json",
         consumes = "application/json",
-        method = RequestMethod.POST)
+        method = RequestMethod.PUT)
     public Ticket UpdateTicket(@PathVariable(value = "id") Long ticketId, @RequestBody Ticket requestTicket) throws FileNotFoundException, IllegalAccessException {
         return ticketService.updateTicket(ticketId,requestTicket);
     }
@@ -92,7 +92,7 @@ public class TicketController {
             value = "/ticket/{id}/status/{statusname}",
             produces = "application/json",
             consumes = "application/json",
-            method = RequestMethod.POST)
+            method = RequestMethod.PUT)
     public Ticket updateStatus(@PathVariable(value = "id") Long ticketId, @PathVariable(value="statusname") String status) throws IllegalAccessException, FileNotFoundException {
         return ticketService.updateTicketStatus(ticketId,status);
     }
@@ -100,16 +100,16 @@ public class TicketController {
     @RequestMapping(
             value = "/ticket/{id}/Response",
             produces = "application/json",
-            method = RequestMethod.POST)
-    public Ticket addResponse(@PathVariable(value = "id") Long ticketId, @RequestBody CommentRequest message) throws Exception {
-        return ticketService.addResponse(ticketId,message.getResponse());
+            method = RequestMethod.PUT)
+    public Ticket addResponse(@PathVariable(value = "id") Long ticketId, @RequestBody CustomerResponseRequest message) throws Exception {
+        return ticketService.addResponse(ticketId,message.getCustomerResponse());
 
     }
 
     @RequestMapping(
             value = "/assign/tickets",
             produces = "application/json",
-            method = RequestMethod.POST)
+            method = RequestMethod.PUT)
     public List<Ticket> assignTicket() throws Exception {
         return ticketService.assignTicket();
     }
@@ -117,7 +117,7 @@ public class TicketController {
     @RequestMapping(
             value = "/assign/ticket/{ticketId}/agent/{agentId}",
             produces = "application/json",
-            method = RequestMethod.POST)
+            method = RequestMethod.PUT)
     public Ticket assignTickettoAgent(
             @PathVariable(value = "ticketId") Long ticketId,
             @PathVariable(value = "agentId") Long agentId) throws Exception {
@@ -128,8 +128,8 @@ public class TicketController {
             value = "ticket/delete/{id}",
             produces = "application/json",
             consumes = "application/json",
-            method = RequestMethod.POST)
-    public Ticket deleteTicket(@PathVariable(value = "id") Long ticketId) throws FileNotFoundException {
+            method = RequestMethod.DELETE)
+    public Ticket deleteTicket(@PathVariable(value = "id") Long ticketId) throws Exception {
         return  ticketService.deleteTicket(ticketId);
     }
 }

@@ -6,12 +6,9 @@ import com.example.growfin.model.Agent;
 import com.example.growfin.repository.AgentRepository;
 import com.example.growfin.repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.FileNotFoundException;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -21,7 +18,7 @@ public class TicketService {
     @Autowired
     AgentRepository agentRepository;
     @Autowired
-    SendGridEmailer sendGridEmailer;
+    SendGridEmailerService sendGridEmailerService;
 
     public List<Ticket> findAllTickets() {
         return ticketRepository.findAll();
@@ -40,39 +37,39 @@ public class TicketService {
     }
 
     public List<Ticket> filterTicket(FilterTicketRequest filterTicketRequest) throws FileNotFoundException {
-        if(filterTicketRequest.getAssignedToAgent() != null
+        if (filterTicketRequest.getAssignedToAgent() != null
                 && filterTicketRequest.getCustomer() != null
                 && filterTicketRequest.getStatus() != null) {
             Agent agent = agentRepository.findById(filterTicketRequest.getAssignedToAgent()).orElseThrow(FileNotFoundException::new);
             return ticketRepository.findByAssignedtoAndStatusAndCustomer(
-                   agent,
+                    agent,
                     filterTicketRequest.getStatus(),
                     filterTicketRequest.getCustomer());
         } else if (filterTicketRequest.getAssignedToAgent() != null
-                    && filterTicketRequest.getCustomer() != null) {
+                && filterTicketRequest.getCustomer() != null) {
             Agent agent = agentRepository.findById(filterTicketRequest.getAssignedToAgent()).orElseThrow(FileNotFoundException::new);
             return ticketRepository.findByAssignedtoAndCustomer(
                     agent,
                     filterTicketRequest.getCustomer()
             );
         } else if (filterTicketRequest.getAssignedToAgent() != null
-                 && filterTicketRequest.getStatus() != null) {
+                && filterTicketRequest.getStatus() != null) {
             Agent agent = agentRepository.findById(filterTicketRequest.getAssignedToAgent()).orElseThrow(FileNotFoundException::new);
             return ticketRepository.findByAssignedtoAndStatus(
                     agent,
                     filterTicketRequest.getStatus()
             );
-        } else if(filterTicketRequest.getCustomer() != null
-                && filterTicketRequest.getStatus() != null ) {
+        } else if (filterTicketRequest.getCustomer() != null
+                && filterTicketRequest.getStatus() != null) {
             return ticketRepository.findByStatusAndCustomer(
                     filterTicketRequest.getStatus(),
                     filterTicketRequest.getCustomer()
             );
-        } else if(filterTicketRequest.getAssignedToAgent() != null) {
+        } else if (filterTicketRequest.getAssignedToAgent() != null) {
             Agent agent = agentRepository.findById(filterTicketRequest.getAssignedToAgent()).orElseThrow(FileNotFoundException::new);
             return ticketRepository.findByAssignedto(agent);
-        } else if(filterTicketRequest.getCustomer() != null) {
-            return  ticketRepository.findByCustomer(filterTicketRequest.getCustomer());
+        } else if (filterTicketRequest.getCustomer() != null) {
+            return ticketRepository.findByCustomer(filterTicketRequest.getCustomer());
         } else {
             return ticketRepository.findByStatus(filterTicketRequest.getStatus());
         }
@@ -92,7 +89,6 @@ public class TicketService {
         if (ticketFields.getDescription() != null) {
             ticketToUpdate.setDescription(ticketFields.getDescription());
         }
-        ticketToUpdate.setLastmodified(ticketFields.getLastmodified());
         if (ticketFields.getPriority() != null) {
             ticketToUpdate.setPriority(ticketFields.getPriority());
         }
@@ -126,11 +122,13 @@ public class TicketService {
     public Ticket addResponse(Long id, String responseMessage) throws Exception {
         Ticket ticket = ticketRepository.findById(id).orElseThrow(FileNotFoundException::new);
         StringBuilder sb = new StringBuilder();
-        sb.append(ticket.getComments());
-        sb.append("\n");
+        if (ticket.getComments() != null) {
+            sb.append(ticket.getComments());
+            sb.append("\n");
+        }
         sb.append(responseMessage);
         ticket.setComments(sb.toString());
-        sendGridEmailer.SendMail(
+        sendGridEmailerService.SendMail(
                 ticket.getCustomerMail(),
                 ticket.getTitle(),
                 "Ticket has been updated with the Response" + responseMessage);
@@ -145,7 +143,7 @@ public class TicketService {
             ticket.setAssignedto(agent);
             agent.setTaskCount(agent.getTaskCount() + 1);
             agentRepository.save(agent);
-            sendGridEmailer.SendMail(
+            sendGridEmailerService.SendMail(
                     ticket.getCustomerMail(),
                     ticket.getTitle(),
                     "Ticket has been updated");
@@ -158,34 +156,29 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(ticketId).orElseThrow(FileNotFoundException::new);
         Agent agent = agentRepository.findById(AgentId).orElseThrow(FileNotFoundException::new);
         ticket.setAssignedto(agent);
-        agent.setTaskCount(agent.getTaskCount()+1);
+        agent.setTaskCount(agent.getTaskCount() + 1);
         agentRepository.save(agent);
         ticketRepository.save(ticket);
-        sendGridEmailer.SendMail(
+        sendGridEmailerService.SendMail(
                 ticket.getCustomerMail(),
                 ticket.getTitle(),
                 "Ticket has been updated");
         return ticket;
     }
 
-    public Ticket deleteTicket(Long id) throws FileNotFoundException {
+    public Ticket deleteTicket(Long id) throws Exception {
         Ticket ticket = ticketRepository.findById(id).orElseThrow(FileNotFoundException::new);
+
+        Agent agent = agentRepository.findById(
+                ticket.getAssignedto().getId()).orElseThrow(FileNotFoundException::new);
+        agent.setTaskCount(agent.getTaskCount() - 1);
+        agentRepository.save(agent);
         ticketRepository.delete(ticket);
+        sendGridEmailerService.SendMail(
+                ticket.getCustomerMail(),
+                ticket.getTitle(),
+                "Ticket has been updated");
         return ticket;
     }
 
-    @Scheduled(cron = "0 0 1 * * *")
-    public void ResolveTicket() throws IllegalAccessException, FileNotFoundException {
-        Calendar cal = Calendar.getInstance();
-        Date today = cal.getTime();
-        cal.add(Calendar.DATE, -30);
-        Date expireDate = cal.getTime();
-        List<Ticket> tickets = ticketRepository.findByLastmodifiedBeforeAndStatusEquals(expireDate, "Resolved");
-        for (Ticket ticket : tickets) {
-            ticket.setStatus("Closed");
-
-        }
-        ticketRepository.saveAll(tickets);
-
-    }
 }

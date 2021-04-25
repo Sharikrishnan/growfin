@@ -6,7 +6,7 @@ import com.sendgrid.helpers.mail.objects.*;
 import org.springframework.stereotype.Service;
 
 @Service
-public class SendGridEmailer {
+public class SendGridEmailerService {
 
     public void SendMail(String mailAddress,String ticket,String comments) throws Exception {
         try {
