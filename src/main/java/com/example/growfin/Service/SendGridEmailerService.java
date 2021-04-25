@@ -5,15 +5,21 @@ import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.*;
 import org.springframework.stereotype.Service;
 
+import static com.example.growfin.common.Constants.fromMail;
+import static com.example.growfin.common.Constants.ticketSubject;
+
 @Service
 public class SendGridEmailerService {
 
+    private static final String sendGridKey = System.getenv("SENDGRID_KEY");
+
     public void SendMail(String mailAddress,String ticket,String comments) throws Exception {
+
         try {
-            Email from = new Email("kicha191@gmail.com");
+            Email from = new Email(fromMail);
             Email to = new Email(mailAddress);
 
-            String subject = "Ticket has been updated";
+            String subject = ticketSubject;
             String contentText;
 
             if (comments.isEmpty()) {
@@ -25,7 +31,7 @@ public class SendGridEmailerService {
 
             Mail mail = new Mail(from, subject, to, content);
 
-            SendGrid sg = new SendGrid("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");
+            SendGrid sg = new SendGrid(sendGridKey);
             Request request = new Request();
 
             request.setMethod(Method.POST);

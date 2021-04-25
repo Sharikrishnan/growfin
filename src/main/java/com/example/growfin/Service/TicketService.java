@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import java.io.FileNotFoundException;
 import java.util.List;
 
+import static com.example.growfin.common.Constants.*;
+
 @Service
 public class TicketService {
     @Autowired
@@ -131,13 +133,13 @@ public class TicketService {
         sendGridEmailerService.SendMail(
                 ticket.getCustomerMail(),
                 ticket.getTitle(),
-                "Ticket has been updated with the Response" + responseMessage);
+                responseComment + responseMessage);
         Ticket updatedTicket = ticketRepository.save(ticket);
         return updatedTicket;
     }
 
     public List<Ticket> assignTicket() throws Exception {
-        List<Ticket> tickets = ticketRepository.findAllByStatusContainsAndAssignedtoIsNull("Open");
+        List<Ticket> tickets = ticketRepository.findAllByStatusContainsAndAssignedtoIsNull(openStatus);
         for (Ticket ticket : tickets) {
             Agent agent = agentRepository.findTopByOrderByTaskCountAscLastmodifiedAsc();
             ticket.setAssignedto(agent);
@@ -146,7 +148,7 @@ public class TicketService {
             sendGridEmailerService.SendMail(
                     ticket.getCustomerMail(),
                     ticket.getTitle(),
-                    "Ticket has been updated");
+                    ticketBody);
         }
         ticketRepository.saveAll(tickets);
         return tickets;
@@ -162,7 +164,7 @@ public class TicketService {
         sendGridEmailerService.SendMail(
                 ticket.getCustomerMail(),
                 ticket.getTitle(),
-                "Ticket has been updated");
+                ticketBody);
         return ticket;
     }
 
@@ -177,7 +179,7 @@ public class TicketService {
         sendGridEmailerService.SendMail(
                 ticket.getCustomerMail(),
                 ticket.getTitle(),
-                "Ticket has been updated");
+                ticketBody);
         return ticket;
     }
 

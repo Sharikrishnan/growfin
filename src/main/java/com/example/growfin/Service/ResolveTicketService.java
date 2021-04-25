@@ -10,6 +10,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import static com.example.growfin.common.Constants.closedStatus;
+import static com.example.growfin.common.Constants.resolvedStatus;
+
 @Service
 public class ResolveTicketService {
 
@@ -22,9 +25,9 @@ public class ResolveTicketService {
         Date today = cal.getTime();
         cal.add(Calendar.DATE, -30);
         Date expireDate = cal.getTime();
-        List<Ticket> tickets = ticketRepository.findByLastmodifiedBeforeAndStatusEquals(expireDate, "Resolved");
+        List<Ticket> tickets = ticketRepository.findByLastmodifiedBeforeAndStatusEquals(expireDate, resolvedStatus);
         for (Ticket ticket : tickets) {
-            ticket.setStatus("Closed");
+            ticket.setStatus(closedStatus);
         }
         ticketRepository.saveAll(tickets);
 

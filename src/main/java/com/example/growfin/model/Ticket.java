@@ -8,9 +8,10 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Date;
+
+import static com.example.growfin.common.Constants.*;
 
 @Entity
 @Table(name = "tickets")
@@ -201,11 +202,11 @@ public class Ticket {
 
     public Boolean checkStatus(String status) {
         ArrayList<String> fixedstatus = new ArrayList<String>();
-        fixedstatus.add("Open");
-        fixedstatus.add("Waiting for customer");
-        fixedstatus.add("Customer responded");
-        fixedstatus.add("Resolved");
-        fixedstatus.add("Closed");
+        fixedstatus.add(openStatus);
+        fixedstatus.add(waitingForCustomer);
+        fixedstatus.add(customerResponded);
+        fixedstatus.add(resolvedStatus);
+        fixedstatus.add(closedStatus);
         return fixedstatus.contains(status);
     }
 }
